@@ -128,7 +128,7 @@ const playController = (req, res, next) => {
     let id = Number(req.params.id);
     let response = req.query.response || "";
 
-    quizzes.findById(id)
+    quizzes.findByPk(id)
     .then((quiz) => res.send(play(id, quiz.question, response)))
     .catch((error) => `A DB Error has occurred:\n${error}`);
  };
@@ -138,7 +138,7 @@ const checkController = (req, res, next) => {
     let response = req.query.response, msg;
     let id = Number(req.params.id);
 
-    quizzes.findById(id)
+    quizzes.findByPk(id)
     .then((quiz) => {
         msg = (quiz.answer===response) ?
               `Yes, "${response}" is the ${quiz.question}` 
@@ -151,13 +151,32 @@ const checkController = (req, res, next) => {
 //  GET /quizzes/1/edit
 const editController = (req, res, next) => {
 
-     // .... introducir código
+     //Implementado por Ericka Zavala
+     let id= Number(req.params.id);
+     let question, answer;
+     quizzes.findByPk(id)
+     .then((quiz)=>{
+        question=quiz.question;
+        answer=quiz.answer;
+        return res.send(quizForm("Edit the Quiz", "post", "/quizzes/"+quiz.id+"?_method=PUT", question, answer));
+     })
+     .catch((error) => `A DB Error has occurred:\n${error}`);
+     
 };
 
 //  PUT /quizzes/1
 const updateController = (req, res, next) => {
 
-     // .... introducir código
+     //Implementado por Ericka Zavala
+     let id= Number(req.params.id);
+     let {question, answer} = req.body;
+     quizzes.findByPk(id)
+     .then((quiz)=>{
+        quiz.update({question, answer});
+     })
+     .then((quiz) => res.redirect('/quizzes'))
+     .catch((error) => `Quiz not updated:\n${error}`);
+     
 };
 
 // GET /quizzes/new
@@ -179,7 +198,14 @@ const createController = (req, res, next) => {
 // DELETE /quizzes/1
 const destroyController = (req, res, next) => {
 
-     // .... introducir código
+     //Implementado por Ericka Zavala
+     let id= Number(req.params.id);
+     quizzes.findByPk(id)
+     .then((quiz)=>{
+        quiz.destroy()
+     })
+     .then((quiz) => res.redirect('/quizzes'))
+     .catch((error) => `Quiz not deleted:\n${error}`);
  };
 
 
@@ -194,10 +220,17 @@ app.post('/quizzes',          createController);
 
     // ..... instalar los MWs asociados a
     //   GET  /quizzes/:id/edit,   PUT  /quizzes/:id y  DELETE  /quizzes/:id
+    //Implementados por Ericka Zavala
+app.get('/quizzes/:id/edit', editController);
+
+    //Usamos el método override para encapsular DELETE y PUT en POST
+app.use(methodOverride('_method',{methods:['POST','GET']}));
+app.put('/quizzes/:id', updateController);
+app.delete('/quizzes/:id', destroyController);
 
 
 app.all('*', (req, res) =>
-    res.send("Error: resource not found or method not supported")
+    res.send("Error: resource not found or method not supported:")
 );        
 
 
